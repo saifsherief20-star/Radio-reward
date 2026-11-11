@@ -42,12 +42,12 @@
   function authPanel(){
     const node=document.createElement('div');node.id='rr-auth';node.innerHTML=`<div class="box"><h2>RADIO REWARDS</h2><p>${page==='customer'?'سجّل أو ادخل إلى بطاقة المكافآت':'تسجيل دخول الموظفين'}</p>
       ${page==='customer'?`<div id="rr-mode"><button id="rr-register">إنشاء حساب جديد</button><button class="secondary" id="rr-login">لدي حساب بالفعل</button></div>`:''}
-      <form id="rr-form"><input id="rr-name" autocomplete="name" placeholder="الاسم بالكامل" required minlength="2" maxlength="80" ${page==='customer'?'':'hidden'}><input id="rr-email" type="email" autocomplete="username" placeholder="البريد الإلكتروني" ${page==='customer'?'hidden disabled':'required'}><input id="rr-phone" type="tel" autocomplete="tel" placeholder="رقم الموبايل" required><input id="rr-password" type="password" autocomplete="current-password" placeholder="كلمة المرور" ${page==='customer'?'hidden disabled':'required'}><div class="err" id="rr-error"></div><button type="submit" id="rr-submit">متابعة</button></form>
+      <form id="rr-form" novalidate><input id="rr-name" name="full_name" autocomplete="name" placeholder="الاسم بالكامل" minlength="2" maxlength="80" ${page==='customer'?'':'hidden disabled'}><input id="rr-email" name="email" type="email" autocomplete="username" placeholder="البريد الإلكتروني" hidden disabled><input id="rr-phone" name="phone" type="tel" autocomplete="tel" placeholder="رقم الموبايل"><input id="rr-password" name="password" type="password" autocomplete="current-password" placeholder="كلمة المرور" hidden disabled><div class="err" id="rr-error" role="status" aria-live="polite"></div><button type="button" id="rr-submit">متابعة</button></form>
       <p style="font-size:12px;margin-top:16px">${page==='customer'?'التسجيل بالاسم ورقم الهاتف لا يثبت ملكية رقم الهاتف.':'استخدم حسابًا أنشأه مدير النظام.'}</p></div>`;
     document.body.append(node);
     let mode='register', busy=false;
     const name=$('#rr-name'), email=$('#rr-email'), phone=$('#rr-phone'), password=$('#rr-password'), form=$('#rr-form'), submit=$('#rr-submit'), error=$('#rr-error');
-    form.noValidate=true;
+    form.noValidate=true; form.setAttribute('novalidate','');
     const toggle=m=>{
       mode=m; name.hidden=false; name.disabled=false; name.required=true;
       password.hidden=true; password.disabled=true; password.required=false;
@@ -89,8 +89,9 @@
       }catch(err){error.textContent=translateError(err.message);}
       finally{busy=false;submit.disabled=false;submit.textContent=page==='customer'?(mode==='register'?'إنشاء الحساب':'دخول'):'دخول';}
     };
-    form.addEventListener('submit',submitAuth);
-    submit.addEventListener('click',e=>{e.preventDefault();submitAuth(e)});
+    submit.type='button';
+    submit.addEventListener('click',submitAuth);
+    form.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submitAuth(e)}});
   }
   function translateError(e){const map={PHONE_ALREADY_REGISTERED:'رقم الهاتف مسجل بالفعل. اختر تسجيل الدخول.',CUSTOMER_LOGIN_FAILED:'الاسم أو رقم الهاتف غير صحيح.',LOGIN_FAILED:'البريد الإلكتروني أو كلمة المرور غير صحيحة.',STAFF_NOT_AUTHORIZED:'هذا الحساب ليس لديه صلاحية دخول.',CUSTOMER_SESSION_INVALID:'انتهت الجلسة. سجّل الدخول مرة أخرى.',QR_EXPIRED:'انتهت صلاحية QR. اطلب من العميل تحديثه.',QR_ALREADY_USED:'تم استخدام هذا الكود بالفعل.',QR_INVALID:'كود QR غير صالح.',NO_REWARD_AVAILABLE:'لا توجد مكافأة متاحة لهذا العميل.'};return map[e]||`حصل خطأ: ${e}`}
   function requireAuth(){if(!token){authPanel();return false}return true}
