@@ -165,7 +165,6 @@ html[lang=ar] h1,html[lang=ar] h2,html[lang=ar] h3,html[lang=ar] .brand,html[lan
   <div class="gl">
     <div class="stats"><div><b id="cnt">6</b><span class="mut">drinks collected</span></div><div><b id="rem">4</b><span class="mut">drinks remaining</span></div></div>
     <div class="bar"><b id="pb" style="--p:60%"></b></div>
-    <label class="mut" style="display:block;margin-top:14px">Preview cup levels<input id="lv" type="range" min="0" max="10" step="1" value="6" aria-label="Drinks collected preview"></label>
   </div>
   <div class="row gl"><div><h3>Next reward</h3><p class="mut">Free Signature Latte at 10 drinks</p></div><a class="btn" href="#card">Show my QR</a></div>
   <div class="gl"><h3 style="margin-bottom:6px">Recent activity</h3>
@@ -228,10 +227,7 @@ function route(){let v=location.hash.slice(1)||'home';if(!$('main>section#'+v))v
  $$('[data-n]').forEach(a=>a.classList.toggle('on',a.dataset.n==v));
  const k=v=='cashier'?'k':v=='admin'?'a':'c';$$('[data-t]').forEach(a=>a.classList.toggle('on',a.dataset.t==k));window.scrollTo(0,0)}
 addEventListener('hashchange',route);route();
-function setLv(n){n=+n;$('#liq').style.transform=`translateY(${250-n*16.6}px)`;$('#cnt').textContent=n;$('#rem').textContent=Math.max(10-n,0);$('#pb').style.setProperty('--p',n*10+'%');$('#stage').classList.toggle('win',n>=10)}
-$('#lv').oninput=e=>setLv(e.target.value);setTimeout(()=>setLv(6),400);
-function mkqr(){if(typeof qrcode!='function')return;const q=qrcode(0,'M');q.addData('RR1.0482-1190.'+Math.floor(Date.now()/3e4)+'.demo');q.make();const s=q.createSvgTag(4,0);$$('.qr').forEach(e=>{e.style.background='#F1E6D5';e.innerHTML=s})}
-mkqr();setInterval(mkqr,3e4);
+
 const CAFE={lat:30.5586,lng:31.0105,r:300};/* placeholder: replace with the café’s real coordinates */
 const nt=$('#nt'),sw=$('#nb'),ns=$('#ns'),S={on:['On. You’ll get an alert within 300 m of the café.','شغّال. هتوصلك رسالة لما تبقى على بعد 300 متر من الكافيه.'],no:['Location is blocked. Allow it in your browser settings.','الموقع مقفول. اسمح بيه من إعدادات المتصفح.']};let wid=null;nt.querySelector('img').src=L;
 const msg=()=>lang=='ar'?['قربت من راديو كافيه!','مستني إيه؟ كارتك مستنيك، ولاتيهك المجاني بيقرب.']:['You’re close to RADIO CAFÉ','What are you waiting for? Your card is waiting, and your free latte is getting closer.'];

@@ -46,7 +46,7 @@
       <p style="font-size:12px;margin-top:16px">${page==='customer'?'التسجيل بالاسم ورقم الهاتف لا يثبت ملكية رقم الهاتف.':'استخدم حسابًا أنشأه مدير النظام.'}</p></div>`;
     document.body.append(node);
     let mode='register';
-    const toggle=m=>{mode=m;$('#rr-name').hidden=false;$('#rr-password').hidden=true;$('#rr-email').hidden=true;$('#rr-submit').textContent=m==='register'?'إنشاء الحساب':'دخول';$('#rr-name').placeholder='الاسم بالكامل';$('#rr-error').textContent=''};
+    const toggle=m=>{mode=m;$('#rr-name').hidden=false;$('#rr-password').hidden=true;$('#rr-email').hidden=true;$('#rr-submit').textContent=m==='register'?'إنشاء الحساب':'دخول';$('#rr-name').placeholder='الاسم المسجل بالحساب';$('#rr-error').textContent='';$('#rr-register').classList.toggle('secondary',m!=='register');$('#rr-login').classList.toggle('secondary',m!=='login')};
     if(page==='customer'){$('#rr-register').onclick=()=>toggle('register');$('#rr-login').onclick=()=>toggle('login');}
     else {$('#rr-name').hidden=true;$('#rr-phone').hidden=true;$('#rr-password').hidden=false;$('#rr-email').hidden=false;$('#rr-submit').textContent='دخول';mode='staff';}
     $('#rr-form').onsubmit=async e=>{e.preventDefault();$('#rr-error').textContent='جارٍ الاتصال...';try{
@@ -60,9 +60,26 @@
   }
   function translateError(e){const map={PHONE_ALREADY_REGISTERED:'رقم الهاتف مسجل بالفعل. اختر تسجيل الدخول.',CUSTOMER_LOGIN_FAILED:'الاسم أو رقم الهاتف غير صحيح.',LOGIN_FAILED:'البريد الإلكتروني أو كلمة المرور غير صحيحة.',STAFF_NOT_AUTHORIZED:'هذا الحساب ليس لديه صلاحية دخول.',CUSTOMER_SESSION_INVALID:'انتهت الجلسة. سجّل الدخول مرة أخرى.',QR_EXPIRED:'انتهت صلاحية QR. اطلب من العميل تحديثه.',QR_ALREADY_USED:'تم استخدام هذا الكود بالفعل.',QR_INVALID:'كود QR غير صالح.',NO_REWARD_AVAILABLE:'لا توجد مكافأة متاحة لهذا العميل.'};return map[e]||`حصل خطأ: ${e}`}
   function requireAuth(){if(!token){authPanel();return false}return true}
-  function addLogout(){const b=document.createElement('button');b.className='rr-action';b.textContent='تسجيل الخروج';b.onclick=()=>{store.del(page==='customer'?'customer_session':'staff_access');store.del('customer');store.del('staff_profile');location.reload()};const target=document.querySelector('main')||document.body;target.append(b)}
+  function doLogout(){
+    store.del(page==='customer'?'customer_session':'staff_access');
+    store.del('customer'); store.del('staff_profile'); store.del('scanned_qr');
+    clearInterval(qrTimer);
+    if(scanner){try{scanner.stop()}catch{}}
+    location.reload();
+  }
+  function addLogout(){
+    const candidates=[...document.querySelectorAll('.li,button,a,[role="button"]')];
+    const target=candidates.find(el=>/sign\\s*out|تسجيل الخروج/i.test(el.textContent||''));
+    if(target){target.style.cursor='pointer';target.setAttribute('role','button');target.tabIndex=0;
+      target.addEventListener('click',e=>{e.preventDefault();doLogout()});
+      target.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();doLogout()}});
+    }else{
+      const b=document.createElement('button');b.className='rr-action';b.textContent='تسجيل الخروج';b.onclick=doLogout;
+      (document.querySelector('main')||document.body).append(b);
+    }
+  }
   async function customerBoot(){
-    const me=await api('customer_me'); const c=me.customer; store.set('customer',JSON.stringify(c));
+    const me=await api('customer_me'); const c=me.customer||me.cust; store.set('customer',JSON.stringify(c));
     const nameEls=[...document.querySelectorAll('h3')].filter(x=>x.textContent.trim()==='Sara Ahmed');nameEls.forEach(x=>x.textContent=c.full_name);
     const cnt=$('#cnt'),rem=$('#rem'),pb=$('#pb');if(cnt)cnt.textContent=c.drink_count;if(rem)rem.textContent=Math.max(0,10-c.drink_count);if(pb)pb.style.setProperty('--p',`${c.drink_count*10}%`);
     const member=$('#card .mcard h3');if(member)member.textContent=c.full_name;
@@ -71,7 +88,7 @@
     const act=$('#activity .tl');if(act){act.innerHTML=(me.transactions||[]).map(t=>`<div class="rr-live"><b>${esc(t.drinks?.name_ar||t.drinks?.name||'مشروب')}</b><p>${new Date(t.created_at).toLocaleString()}</p><small>الكمية: ${t.quantity}</small></div>`).join('')||'<p>لا توجد عمليات بعد.</p>'}
     const rewards=$('#rewards');if(rewards){const r=me.rewards?.[0];if(r){const h=rewards.querySelector('h3');if(h)h.textContent=r.name_ar||r.name;}}
     const qrContainers=document.querySelectorAll('#card .qr');
-    async function refreshQR(){try{const q=await api('issue_qr');qrContainers.forEach(el=>{el.innerHTML='';if(window.qrcode){const code=qrcode(0,'M');code.addData(q.qr);code.make();el.innerHTML=code.createImgTag(5,8)}else el.textContent=q.qr}}catch(e){notice(translateError(e.message))}}
+    async function refreshQR(){try{const q=await api('issue_qr');qrContainers.forEach(el=>{el.innerHTML='';if(window.qrcode){const code=qrcode(0,'M');code.addData(q.qr);code.make();el.innerHTML=code.createImgTag(5,8)}else el.textContent=q.qr})}catch(e){notice(translateError(e.message))}}
     await refreshQR();clearInterval(qrTimer);qrTimer=setInterval(refreshQR,25000);
     addLogout();
     setupNearby();
@@ -92,22 +109,45 @@
     const qbox=document.createElement('div');qbox.id='rr-scanbox';qbox.className='rr-live';qbox.innerHTML='<h3>مسح QR العميل</h3><div id="rr-reader"></div><p id="rr-scanmsg">اضغط بدء المسح ووجّه الكاميرا إلى QR.</p><button class="rr-action" id="rr-startscan">بدء الكاميرا</button>';scanPanel?.append(qbox);
     $('#rr-startscan').onclick=()=>startScan();
     const reg=$('#reg');if(reg)reg.onclick=async()=>{try{const q=store.get('scanned_qr');if(!q)throw Error('امسح QR العميل أولًا');const out=await api('redeem_qr',{qr:q,drink_id:selectedDrink,quantity});store.del('scanned_qr');$('#okt').textContent=`تم تسجيل ${out.total_drinks} مشروب إجماليًا. المتبقي: ${out.drink_count}. المكافآت الجديدة: ${out.rewards_earned}.`;$('#p-prev').classList.remove('on');$('#p-ok').classList.add('on');notice('تم تسجيل المشروب بنجاح');}catch(e){notice(translateError(e.message));$('#p-err').classList.add('on')}};
-    const mn=$('#mn'),pl=$('#pl');quantity=1;if(mn)mn.onclick=()=>{quantity=Math.max(1,quantity-1);notice('الكمية: '+quantity)};if(pl)pl.onclick=()=>{quantity=Math.min(4,quantity+1);notice('الكمية: '+quantity)};
+    const mn=$('#mn'),pl=$('#pl'),qt=$('#qt');quantity=1;if(qt)qt.textContent=quantity;if(mn)mn.onclick=()=>{quantity=Math.max(1,quantity-1);if(qt)qt.textContent=quantity;notice('الكمية: '+quantity)};if(pl)pl.onclick=()=>{quantity=Math.min(4,quantity+1);if(qt)qt.textContent=quantity;notice('الكمية: '+quantity)};
     document.querySelectorAll('#p-ok button').forEach(b=>b.onclick=()=>{location.reload()});
     addLogout();
   }
   async function startScan(){
-    try{if(!window.Html5Qrcode){await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';s.onload=resolve;s.onerror=reject;document.head.append(s)})}
+    try{if(!window.Html5Qrcode){
+        const urls=['https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js','https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js'];
+        let loaded=false;
+        for(const src of urls){try{await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.head.append(s)});if(window.Html5Qrcode){loaded=true;break}}catch{}}
+        if(!loaded)throw Error('تعذر تحميل مكتبة قارئ QR. تحقق من الإنترنت ثم أعد المحاولة.');
+      }
       if(scanner){try{await scanner.stop()}catch{}}
-      scanner=new Html5Qrcode('rr-reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:240}},async text=>{try{await scanner.stop();scanner=null;store.set('scanned_qr',text);$('#rr-scanmsg').textContent='تم قراءة QR. اختر المشروب والكمية ثم سجل العملية.';$('#p-scan').classList.remove('on');$('#p-prev').classList.add('on');}catch(e){notice(e.message)}},()=>{});
-    }catch(e){notice('تعذر تشغيل الكاميرا. تأكد من HTTPS وصلاحية الكاميرا. '+e.message)}
+      scanner=new Html5Qrcode('rr-reader');const onScan=async text=>{try{await scanner.stop();scanner=null;store.set('scanned_qr',text);$('#rr-scanmsg').textContent='تم قراءة QR. اختر المشروب والكمية ثم سجل العملية.';$('#p-scan').classList.remove('on');$('#p-prev').classList.add('on');}catch(e){notice(e.message)}};
+      const config={fps:10,qrbox:{width:240,height:240}};
+      try{await scanner.start({facingMode:'environment'},config,onScan,()=>{});}
+      catch(first){const cams=await Html5Qrcode.getCameras();if(!cams?.length)throw first;await scanner.start(cams[cams.length-1].id,config,onScan,()=>{});}
+    }catch(e){notice('تعذر تشغيل الكاميرا. افتح الموقع عبر HTTPS واسمح للمتصفح باستخدام الكاميرا. '+e.message)}
   }
   async function adminBoot(){
     const data=await api('admin_dashboard');
-    const headings=[...document.querySelectorAll('h3')];
-    const set=(label,value)=>{const h=headings.find(x=>x.textContent.trim()===label);if(h){const box=h.parentElement;let b=box.querySelector('b');if(!b){b=document.createElement('b');h.before(b)}b.textContent=value}};
-    set('Total customers',data.total_customers);set('Total visits',data.total_visits);set('Drinks collected',data.drinks_collected);set('Rewards redeemed',data.rewards_redeemed);
-    const tbl=$('#tb');if(tbl){tbl.innerHTML=(data.transactions||[]).map(t=>`<tr><td>${esc(t.customer_id.slice(0,8))}</td><td>${esc(t.drinks?.name_ar||t.drinks?.name||'مشروب')}</td><td>${t.quantity}</td><td>${new Date(t.created_at).toLocaleString()}</td></tr>`).join('')}
+    const set=(key,value)=>{const el=document.querySelector(`[data-kpi="${key}"]`);if(el)el.textContent=Number(value||0).toLocaleString();}
+    set('customers',data.total_customers);set('visits',data.total_visits);
+    set('drinks',data.drinks_collected);set('rewards',data.rewards_redeemed);
+    const tbody=$('#tb');
+    const customers=data.customers||[];
+    if(tbody){
+      tbody.innerHTML=customers.map(c=>{
+        const tier=Number(c.total_drinks||0)>=25?'Gold':Number(c.total_drinks||0)>=10?'Silver':'New';
+        const last=(data.transactions||[]).find(t=>t.customer_id===c.id);
+        return `<tr><td>${esc(c.full_name)}</td><td>RR-${String(c.member_number||'').padStart(8,'0')}</td><td>${Number(c.drink_count||0)}</td><td>${tier}</td><td>${last?new Date(last.created_at).toLocaleString():'—'}</td></tr>`;
+      }).join('')||'<tr><td colspan="5">لا يوجد عملاء مسجلون حتى الآن.</td></tr>';
+    }
+    const search=$('#q'),filter=$('#tf');
+    const apply=()=>{if(!tbody)return;const term=(search?.value||'').toLowerCase();const tier=filter?.value||'';
+      [...tbody.querySelectorAll('tr')].forEach((tr,i)=>{const c=customers[i];if(!c)return;const t=Number(c.total_drinks||0)>=25?'Gold':Number(c.total_drinks||0)>=10?'Silver':'New';tr.hidden=!((`${c.full_name} RR-${String(c.member_number||'')}`).toLowerCase().includes(term)&&(!tier||tier===t));});
+    };
+    search?.addEventListener('input',apply);filter?.addEventListener('change',apply);
+    const table=$('#tb');
+    if(table){const heading=table.closest('.gl')?.querySelector('h3');if(heading)heading.textContent='العملاء المسجلون';}
     addLogout();
   }
   async function boot(){try{if(page==='customer')await customerBoot();else if(page==='cashier')await cashierBoot();else await adminBoot()}catch(e){notice(translateError(e.message));if(['CUSTOMER_SESSION_INVALID','STAFF_SESSION_INVALID','STAFF_NOT_AUTHORIZED','STAFF_LOGIN_REQUIRED','CUSTOMER_SESSION_REQUIRED'].includes(e.message)){store.del(page==='customer'?'customer_session':'staff_access');authPanel()}}}

@@ -127,26 +127,15 @@ html[lang=ar] h1,html[lang=ar] h2,html[lang=ar] h3,html[lang=ar] .brand,html[lan
 <main><section id="admin">
   <h2>Dashboard</h2>
   <div class="kp">
-    <div class="gl"><span class="mut">Total customers</span><b>2,418</b><span class="go">+8.2%</span></div>
-    <div class="gl"><span class="mut">Total visits</span><b>9,764</b><span class="go">+5.1%</span></div>
-    <div class="gl"><span class="mut">Drinks collected</span><b>18,230</b><span class="go">+11%</span></div>
-    <div class="gl"><span class="mut">Rewards redeemed</span><b>612</b><span class="go">+3.4%</span></div>
+    <div class="gl"><span class="mut">Total customers</span><b data-kpi="customers">—</b></div>
+    <div class="gl"><span class="mut">Total visits</span><b data-kpi="visits">—</b></div>
+    <div class="gl"><span class="mut">Drinks collected</span><b data-kpi="drinks">—</b></div>
+    <div class="gl"><span class="mut">Rewards redeemed</span><b data-kpi="rewards">—</b></div>
   </div>
-  <div class="two">
-    <div class="gl"><h3>Visits this month</h3>
-      <svg viewBox="0 0 400 140" style="width:100%;margin-top:8px"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C6A36A" stop-opacity=".55"/><stop offset="1" stop-color="#C6A36A" stop-opacity="0"/></linearGradient></defs><path d="M0 110C40 100 60 60 100 70S160 110 200 70 270 20 310 40 370 30 400 12V140H0z" fill="url(#ag)"/><path d="M0 110C40 100 60 60 100 70S160 110 200 70 270 20 310 40 370 30 400 12" fill="none" stroke="#C6A36A" stroke-width="3"/></svg></div>
-    <div class="gl" style="display:grid;justify-items:center;gap:10px"><h3>Drinks by type</h3><div class="dn" role="img" aria-label="Donut chart of drinks by type"></div><p class="mut">Latte 38% · Espresso 24% · Flat white 20% · Cold brew 18%</p></div>
-  </div>
-  <div class="gl"><h3 style="margin-bottom:10px">Drinks per weekday</h3><div class="bars"><i style="--h:55%"></i><i style="--h:62%"></i><i style="--h:48%"></i><i style="--h:70%"></i><i style="--h:92%"></i><i style="--h:100%"></i><i style="--h:80%"></i></div><div class="row mut" style="margin-top:6px"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div>
+  <div class="gl rr-report-note">Live reports are populated from recorded transactions.</div>
   <div class="gl"><h3 style="margin-bottom:10px">Customers</h3>
     <div class="tools"><input id="q" type="search" placeholder="Search name or member number" aria-label="Search customers"><select id="tf" aria-label="Filter by tier"><option value="">All tiers</option><option>Gold</option><option>Silver</option><option>New</option></select></div>
-    <div class="tw"><table><thead><tr><th>Name</th><th>Member no.</th><th>Drinks</th><th>Tier</th><th>Last visit</th></tr></thead><tbody id="tb">
-      <tr><td>Sara Ahmed</td><td>RR-0482-1190</td><td>6</td><td>Gold</td><td>Today</td></tr>
-      <tr><td>Omar Khaled</td><td>RR-0391-2204</td><td>9</td><td>Gold</td><td>Today</td></tr>
-      <tr><td>Mona Adel</td><td>RR-0517-0873</td><td>3</td><td>Silver</td><td>Yesterday</td></tr>
-      <tr><td>Youssef Samir</td><td>RR-0620-4412</td><td>1</td><td>New</td><td>Sat</td></tr>
-      <tr><td>Nour Hassan</td><td>RR-0288-9931</td><td>14</td><td>Gold</td><td>Fri</td></tr>
-    </tbody></table></div></div>
+    <div class="tw"><table><thead><tr><th>Name</th><th>Member no.</th><th>Drinks</th><th>Tier</th><th>Last visit</th></tr></thead><tbody id="tb"><tr><td colspan="5">Loading live customers…</td></tr></tbody></table></div></div>
 </section></main>
 
 <script>
