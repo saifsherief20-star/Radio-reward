@@ -42,21 +42,55 @@
   function authPanel(){
     const node=document.createElement('div');node.id='rr-auth';node.innerHTML=`<div class="box"><h2>RADIO REWARDS</h2><p>${page==='customer'?'سجّل أو ادخل إلى بطاقة المكافآت':'تسجيل دخول الموظفين'}</p>
       ${page==='customer'?`<div id="rr-mode"><button id="rr-register">إنشاء حساب جديد</button><button class="secondary" id="rr-login">لدي حساب بالفعل</button></div>`:''}
-      <form id="rr-form"><input id="rr-name" autocomplete="name" placeholder="الاسم بالكامل" required minlength="2" maxlength="80" ${page==='customer'?'':'hidden'}><input id="rr-email" type="email" autocomplete="username" placeholder="البريد الإلكتروني" ${page==='customer'?'hidden':'required'}><input id="rr-phone" type="tel" autocomplete="tel" placeholder="رقم الموبايل" required><input id="rr-password" type="password" autocomplete="current-password" placeholder="كلمة المرور" ${page==='customer'?'hidden':'required'}><div class="err" id="rr-error"></div><button type="submit" id="rr-submit">متابعة</button></form>
+      <form id="rr-form"><input id="rr-name" autocomplete="name" placeholder="الاسم بالكامل" required minlength="2" maxlength="80" ${page==='customer'?'':'hidden'}><input id="rr-email" type="email" autocomplete="username" placeholder="البريد الإلكتروني" ${page==='customer'?'hidden disabled':'required'}><input id="rr-phone" type="tel" autocomplete="tel" placeholder="رقم الموبايل" required><input id="rr-password" type="password" autocomplete="current-password" placeholder="كلمة المرور" ${page==='customer'?'hidden disabled':'required'}><div class="err" id="rr-error"></div><button type="submit" id="rr-submit">متابعة</button></form>
       <p style="font-size:12px;margin-top:16px">${page==='customer'?'التسجيل بالاسم ورقم الهاتف لا يثبت ملكية رقم الهاتف.':'استخدم حسابًا أنشأه مدير النظام.'}</p></div>`;
     document.body.append(node);
-    let mode='register';
-    const toggle=m=>{mode=m;$('#rr-name').hidden=false;$('#rr-password').hidden=true;$('#rr-email').hidden=true;$('#rr-submit').textContent=m==='register'?'إنشاء الحساب':'دخول';$('#rr-name').placeholder='الاسم المسجل بالحساب';$('#rr-error').textContent='';$('#rr-register').classList.toggle('secondary',m!=='register');$('#rr-login').classList.toggle('secondary',m!=='login')};
-    if(page==='customer'){$('#rr-register').onclick=()=>toggle('register');$('#rr-login').onclick=()=>toggle('login');}
-    else {$('#rr-name').hidden=true;$('#rr-phone').hidden=true;$('#rr-password').hidden=false;$('#rr-email').hidden=false;$('#rr-submit').textContent='دخول';mode='staff';}
-    $('#rr-form').onsubmit=async e=>{e.preventDefault();$('#rr-error').textContent='جارٍ الاتصال...';try{
-      let result;
-      if(page==='customer') result=await api(mode==='register'?'register_customer':'customer_login',{full_name:$('#rr-name').value.trim(),phone:$('#rr-phone').value.trim()},null);
-      else result=await api('staff_login',{email:$('#rr-email').value.trim(),password:$('#rr-password').value},null);
-      if(page==='customer'){token=result.session_token;store.set('customer_session',token);store.set('customer',JSON.stringify(result.customer));}
-      else {token=result.access_token;profile=result.profile;store.set('staff_access',token);store.set('staff_profile',JSON.stringify(profile));}
-      node.remove(); await boot();
-    }catch(err){$('#rr-error').textContent=translateError(err.message)}};
+    let mode='register', busy=false;
+    const name=$('#rr-name'), email=$('#rr-email'), phone=$('#rr-phone'), password=$('#rr-password'), form=$('#rr-form'), submit=$('#rr-submit'), error=$('#rr-error');
+    form.noValidate=true;
+    const toggle=m=>{
+      mode=m; name.hidden=false; name.disabled=false; name.required=true;
+      password.hidden=true; password.disabled=true; password.required=false;
+      email.hidden=true; email.disabled=true; email.required=false;
+      submit.textContent=m==='register'?'إنشاء الحساب':'دخول';
+      name.placeholder=m==='register'?'الاسم بالكامل':'الاسم المسجل بالحساب';
+      error.textContent='';
+      $('#rr-register').classList.toggle('secondary',m!=='register');
+      $('#rr-login').classList.toggle('secondary',m!=='login');
+    };
+    if(page==='customer'){
+      phone.hidden=false; phone.disabled=false; phone.required=true;
+      $('#rr-register').onclick=()=>toggle('register'); $('#rr-login').onclick=()=>toggle('login');
+      toggle('register');
+    } else {
+      name.hidden=true; name.disabled=true; name.required=false;
+      phone.hidden=true; phone.disabled=true; phone.required=false;
+      password.hidden=false; password.disabled=false; password.required=true;
+      email.hidden=false; email.disabled=false; email.required=true;
+      submit.textContent='دخول'; mode='staff';
+    }
+    const submitAuth=async e=>{
+      if(e)e.preventDefault();
+      if(busy)return;
+      if(page==='customer'){
+        if(name.value.trim().length<2){error.textContent='اكتب الاسم بالكامل (حرفين على الأقل).';name.focus();return;}
+        if(!phone.value.trim()){error.textContent='اكتب رقم الموبايل.';phone.focus();return;}
+      } else {
+        if(!email.value.trim()||!password.value){error.textContent='اكتب البريد الإلكتروني وكلمة المرور.';return;}
+      }
+      busy=true; submit.disabled=true; submit.textContent='جارٍ الاتصال...'; error.textContent='جارٍ الاتصال بالخادم...';
+      try{
+        let result;
+        if(page==='customer') result=await api(mode==='register'?'register_customer':'customer_login',{full_name:name.value.trim(),phone:phone.value.trim()},null);
+        else result=await api('staff_login',{email:email.value.trim(),password:password.value},null);
+        if(page==='customer'){token=result.session_token;store.set('customer_session',token);store.set('customer',JSON.stringify(result.customer));}
+        else {token=result.access_token;profile=result.profile;store.set('staff_access',token);store.set('staff_profile',JSON.stringify(profile));}
+        node.remove(); await boot();
+      }catch(err){error.textContent=translateError(err.message);}
+      finally{busy=false;submit.disabled=false;submit.textContent=page==='customer'?(mode==='register'?'إنشاء الحساب':'دخول'):'دخول';}
+    };
+    form.addEventListener('submit',submitAuth);
+    submit.addEventListener('click',e=>{e.preventDefault();submitAuth(e)});
   }
   function translateError(e){const map={PHONE_ALREADY_REGISTERED:'رقم الهاتف مسجل بالفعل. اختر تسجيل الدخول.',CUSTOMER_LOGIN_FAILED:'الاسم أو رقم الهاتف غير صحيح.',LOGIN_FAILED:'البريد الإلكتروني أو كلمة المرور غير صحيحة.',STAFF_NOT_AUTHORIZED:'هذا الحساب ليس لديه صلاحية دخول.',CUSTOMER_SESSION_INVALID:'انتهت الجلسة. سجّل الدخول مرة أخرى.',QR_EXPIRED:'انتهت صلاحية QR. اطلب من العميل تحديثه.',QR_ALREADY_USED:'تم استخدام هذا الكود بالفعل.',QR_INVALID:'كود QR غير صالح.',NO_REWARD_AVAILABLE:'لا توجد مكافأة متاحة لهذا العميل.'};return map[e]||`حصل خطأ: ${e}`}
   function requireAuth(){if(!token){authPanel();return false}return true}
